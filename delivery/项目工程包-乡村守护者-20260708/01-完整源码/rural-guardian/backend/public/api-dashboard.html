@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 可视化管理 - 乡村守护者智慧养老平台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --bg-hover: #334155;
+      --border: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #06b6d4;
+      --method-get: #22c55e;
+      --method-post: #3b82f6;
+      --method-put: #f59e0b;
+      --method-delete: #ef4444;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .header h1 span { color: var(--accent); }
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* API 列表 */
+    .api-group {
+      margin-bottom: 24px;
+    }
+    .api-group-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+    .api-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .api-item:hover { border-color: var(--accent); }
+    .api-item-header {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      gap: 12px;
+    }
+    .method-badge {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 60px;
+      text-align: center;
+      color: #fff;
+    }
+    .method-badge.GET { background: var(--method-get); }
+    .method-badge.POST { background: var(--method-post); }
+    .method-badge.PUT { background: var(--method-put); }
+    .method-badge.DELETE { background: var(--method-delete); }
+    .api-path {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: var(--text-primary);
+      flex: 1;
+    }
+    .api-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .api-auth {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--bg-hover);
+      color: var(--text-muted);
+    }
+    .api-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-test {
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-test:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    .api-detail {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 16px;
+    }
+    .api-detail.show { display: block; }
+    .response-area {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 400px;
+      overflow-y: auto;
+      color: var(--text-secondary);
+    }
+    .response-area.success { border-color: var(--success); }
+    .response-area.error { border-color: var(--danger); }
+    .status-code {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .status-code.s2xx { background: rgba(34,197,94,0.15); color: var(--success); }
+    .status-code.s4xx { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .status-code.s5xx { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    /* 配置管理 */
+    .config-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .config-card h3 {
+      font-size: 15px;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+    .config-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+    .config-row:last-child { border-bottom: none; }
+    .config-key {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      min-width: 160px;
+    }
+    .config-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+    .config-input {
+      padding: 6px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 13px;
+      min-width: 200px;
+    }
+    .config-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .btn-save {
+      padding: 6px 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-save:hover { background: var(--accent-hover); }
+
+    /* 数据库状态 */
+    .db-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .db-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .db-icon {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(59,130,246,0.15);
+      color: var(--accent);
+    }
+    .db-info { flex: 1; }
+    .db-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Fira Code', 'Consolas', monospace;
+    }
+    .db-count {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .db-status {
+      font-size: 11px;
+      color: var(--success);
+    }
+
+    /* 登录区域 */
+    .login-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .login-section h3 { font-size: 15px; margin-bottom: 12px; }
+    .login-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .login-input {
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+    .login-input:focus { outline: none; border-color: var(--accent); }
+    .btn-login {
+      padding: 8px 20px;
+      background: var(--accent);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-login:hover { background: var(--accent-hover); }
+    .token-display {
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 11px;
+      color: var(--success);
+      word-break: break-all;
+      display: none;
+    }
+    .token-display.show { display: block; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 80px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 1000;
+      transform: translateX(120%);
+      transition: transform 0.3s;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: var(--success); color: #fff; }
+    .toast.error { background: var(--danger); color: #fff; }
+
+    .loading {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .quick-tests {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .btn-quick {
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-quick:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span>API</span> 可视化管理面板</h1>
+    <div class="header-info">
+      <span><span class="status-dot"></span>服务运行中</span>
+      <span id="serverAddr"></span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 登录区域 -->
+    <div class="login-section">
+      <h3>认证令牌（测试需要登录的接口）</h3>
+      <div class="login-row">
+        <input type="text" class="login-input" id="loginUser" placeholder="用户名" value="gov_admin" style="width:140px">
+        <input type="password" class="login-input" id="loginPass" placeholder="密码" value="admin123" style="width:140px">
+        <button class="btn-login" onclick="doLogin()">登录获取令牌</button>
+        <span style="color:var(--text-muted);font-size:12px">gov_admin/admin123 | village_staff/staff123 | provider_user/provider123 | family_user/family123 | elderly_user/elderly123</span>
+      </div>
+      <div class="token-display" id="tokenDisplay"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('apis')">API 端点</button>
+      <button class="tab" onclick="switchTab('config')">系统配置</button>
+      <button class="tab" onclick="switchTab('database')">数据库状态</button>
+    </div>
+
+    <!-- API 端点 -->
+    <div class="tab-content active" id="tab-apis">
+      <div class="quick-tests">
+        <button class="btn-quick" onclick="quickTest('GET','/api/dashboard/stats')">仪表盘统计</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/elderly')">老人列表</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/alert')">预警列表</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/order')">工单列表</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/health')">健康记录</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/device')">设备列表</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/village')">村庄列表</button>
+        <button class="btn-quick" onclick="quickTest('GET','/api/provider')">服务商列表</button>
+      </div>
+      <div id="apiList"></div>
+    </div>
+
+    <!-- 系统配置 -->
+    <div class="tab-content" id="tab-config">
+      <div id="configList"></div>
+    </div>
+
+    <!-- 数据库状态 -->
+    <div class="tab-content" id="tab-database">
+      <div class="db-grid" id="dbGrid"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const BASE = window.location.origin;
+    let authToken = '';
+
+    // API 端点定义
+    const apiEndpoints = [
+      {
+        group: '认证管理',
+        apis: [
+          { method: 'POST', path: '/api/auth/login', desc: '用户登录', auth: false },
+          { method: 'POST', path: '/api/auth/register', desc: '用户注册', auth: false },
+          { method: 'GET', path: '/api/auth/me', desc: '获取当前用户信息', auth: true },
+        ]
+      },
+      {
+        group: '仪表盘',
+        apis: [
+          { method: 'GET', path: '/api/dashboard/stats', desc: '仪表盘统计数据', auth: true },
+        ]
+      },
+      {
+        group: '老人管理',
+        apis: [
+          { method: 'GET', path: '/api/elderly', desc: '老人列表（分页）', auth: true },
+          { method: 'GET', path: '/api/elderly/1', desc: '老人详情', auth: true },
+          { method: 'POST', path: '/api/elderly', desc: '创建老人', auth: true },
+          { method: 'PUT', path: '/api/elderly/1', desc: '更新老人', auth: true },
+          { method: 'DELETE', path: '/api/elderly/1', desc: '删除老人', auth: true },
+        ]
+      },
+      {
+        group: '健康记录',
+        apis: [
+          { method: 'GET', path: '/api/health', desc: '健康记录列表（分页）', auth: true },
+          { method: 'GET', path: '/api/health/1', desc: '健康记录详情', auth: true },
+          { method: 'POST', path: '/api/health', desc: '创建健康记录', auth: true },
+          { method: 'PUT', path: '/api/health/1', desc: '更新健康记录', auth: true },
+          { method: 'DELETE', path: '/api/health/1', desc: '删除健康记录', auth: true },
+        ]
+      },
+      {
+        group: '预警管理',
+        apis: [
+          { method: 'GET', path: '/api/alert', desc: '预警列表（分页）', auth: true },
+          { method: 'GET', path: '/api/alert/1', desc: '预警详情', auth: true },
+          { method: 'POST', path: '/api/alert', desc: '创建预警', auth: true },
+          { method: 'PUT', path: '/api/alert/1', desc: '更新预警', auth: true },
+          { method: 'DELETE', path: '/api/alert/1', desc: '删除预警', auth: true },
+        ]
+      },
+      {
+        group: '服务工单',
+        apis: [
+          { method: 'GET', path: '/api/order', desc: '工单列表（分页）', auth: true },
+          { method: 'GET', path: '/api/order/1', desc: '工单详情', auth: true },
+          { method: 'POST', path: '/api/order', desc: '创建工单', auth: true },
+          { method: 'PUT', path: '/api/order/1', desc: '更新工单', auth: true },
+          { method: 'DELETE', path: '/api/order/1', desc: '删除工单', auth: true },
+        ]
+      },
+      {
+        group: '设备管理',
+        apis: [
+          { method: 'GET', path: '/api/device', desc: '设备列表（分页）', auth: true },
+          { method: 'GET', path: '/api/device/1', desc: '设备详情', auth: true },
+          { method: 'POST', path: '/api/device', desc: '创建设备', auth: true },
+          { method: 'PUT', path: '/api/device/1', desc: '更新设备', auth: true },
+          { method: 'DELETE', path: '/api/device/1', desc: '删除设备', auth: true },
+        ]
+      },
+      {
+        group: '村庄管理',
+        apis: [
+          { method: 'GET', path: '/api/village', desc: '村庄列表（分页）', auth: true },
+          { method: 'GET', path: '/api/village/1', desc: '村庄详情', auth: true },
+          { method: 'POST', path: '/api/village', desc: '创建村庄', auth: true },
+          { method: 'PUT', path: '/api/village/1', desc: '更新村庄', auth: true },
+          { method: 'DELETE', path: '/api/village/1', desc: '删除村庄', auth: true },
+        ]
+      },
+      {
+        group: '服务商管理',
+        apis: [
+          { method: 'GET', path: '/api/provider', desc: '服务商列表（分页）', auth: true },
+          { method: 'GET', path: '/api/provider/1', desc: '服务商详情', auth: true },
+          { method: 'POST', path: '/api/provider', desc: '创建服务商', auth: true },
+          { method: 'PUT', path: '/api/provider/1', desc: '更新服务商', auth: true },
+          { method: 'DELETE', path: '/api/provider/1', desc: '删除服务商', auth: true },
+        ]
+      },
+      {
+        group: '家属管理',
+        apis: [
+          { method: 'GET', path: '/api/family', desc: '家属列表（分页）', auth: true },
+          { method: 'GET', path: '/api/family/1', desc: '家属详情', auth: true },
+          { method: 'POST', path: '/api/family', desc: '创建家属关联', auth: true },
+          { method: 'PUT', path: '/api/family/1', desc: '更新家属关联', auth: true },
+          { method: 'DELETE', path: '/api/family/1', desc: '删除家属关联', auth: true },
+        ]
+      },
+      {
+        group: '系统管理',
+        apis: [
+          { method: 'GET', path: '/api/config', desc: '获取系统配置', auth: false },
+          { method: 'PUT', path: '/api/config/:key', desc: '更新系统配置', auth: false },
+          { method: 'GET', path: '/api/db-status', desc: '数据库表状态', auth: false },
+        ]
+      },
+    ];
+
+    // 渲染 API 列表
+    function renderApiList() {
+      const container = document.getElementById('apiList');
+      let html = '';
+      apiEndpoints.forEach((group, gi) => {
+        html += `<div class="api-group"><div class="api-group-title">${group.group}</div>`;
+        group.apis.forEach((api, ai) => {
+          const id = `api-${gi}-${ai}`;
+          html += `
+            <div class="api-item">
+              <div class="api-item-header" onclick="toggleDetail('${id}')">
+                <span class="method-badge ${api.method}">${api.method}</span>
+                <span class="api-path">${api.path}</span>
+                <span class="api-desc">${api.desc}</span>
+                ${api.auth ? '<span class="api-auth">需要认证</span>' : ''}
+                <div class="api-actions">
+                  <button class="btn-test" onclick="event.stopPropagation();testApi('${id}','${api.method}','${api.path}',${api.auth})">发送请求</button>
+                </div>
+              </div>
+              <div class="api-detail" id="${id}">
+                <div style="color:var(--text-muted);font-size:12px">等待发送请求...</div>
+                <div class="response-area" id="${id}-response"></div>
+              </div>
+            </div>`;
+        });
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function toggleDetail(id) {
+      document.getElementById(id).classList.toggle('show');
+    }
+
+    // 测试 API
+    async function testApi(id, method, path, needAuth) {
+      const detail = document.getElementById(id);
+      const responseEl = document.getElementById(id + '-response');
+      detail.classList.add('show');
+      responseEl.className = 'response-area';
+      responseEl.innerHTML = '<span class="loading"></span> 请求中...';
+
+      const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+      };
+      if (needAuth && authToken) {
+        opts.headers['Authorization'] = 'Bearer ' + authToken;
+      }
+      if (method === 'POST' || method === 'PUT') {
+        opts.body = JSON.stringify({});
+      }
+
+      try {
+        const resp = await fetch(BASE + path, opts);
+        const data = await resp.json();
+        const codeClass = data.code < 300 ? 's2xx' : data.code < 500 ? 's4xx' : 's5xx';
+        responseEl.className = 'response-area ' + (data.code === 200 ? 'success' : 'error');
+        responseEl.innerHTML = `<span class="status-code ${codeClass}">code: ${data.code}</span>\n${JSON.stringify(data, null, 2)}`;
+      } catch (e) {
+        responseEl.className = 'response-area error';
+        responseEl.innerHTML = `请求失败: ${e.message}`;
+      }
+    }
+
+    // 快速测试
+    function quickTest(method, path) {
+      const id = 'quick-' + Date.now();
+      testApi(id, method, path, true);
+    }
+
+    // 登录
+    async function doLogin() {
+      const user = document.getElementById('loginUser').value;
+      const pass = document.getElementById('loginPass').value;
+      const display = document.getElementById('tokenDisplay');
+
+      try {
+        const resp = await fetch(BASE + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass }),
+        });
+        const data = await resp.json();
+        if (data.code === 200) {
+          authToken = data.data.token;
+          display.classList.add('show');
+          display.textContent = 'Token: ' + authToken;
+          showToast('登录成功 - ' + data.data.user.realName + ' (' + data.data.user.role + ')', 'success');
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast('登录失败: ' + e.message, 'error');
+      }
+    }
+
+    // Tab 切换
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'config') loadConfigs();
+      if (name === 'database') loadDbStatus();
+    }
+
+    // 加载配置
+    async function loadConfigs() {
+      try {
+        const resp = await fetch(BASE + '/api/config');
+        const data = await resp.json();
+        if (data.code !== 200) return;
+
+        const groups = {};
+        data.data.forEach(c => {
+          if (!groups[c.config_group]) groups[c.config_group] = [];
+          groups[c.config_group].push(c);
+        });
+
+        let html = '';
+        Object.entries(groups).forEach(([group, configs]) => {
+          html += `<div class="config-card"><h3>${group}</h3>`;
+          configs.forEach(c => {
+            html += `
+              <div class="config-row">
+                <span class="config-key">${c.config_key}</span>
+                <span class="config-desc">${c.description || ''}</span>
+                <input class="config-input" id="cfg-${c.config_key}" value="${c.config_value || ''}">
+                <button class="btn-save" onclick="saveConfig('${c.config_key}')">保存</button>
+              </div>`;
+          });
+          html += '</div>';
+        });
+        document.getElementById('configList').innerHTML = html;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function saveConfig(key) {
+      const value = document.getElementById('cfg-' + key).value;
+      try {
+        const resp = await fetch(BASE + '/api/config/' + key, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value }),
+        });
+        const data = await resp.json();
+        showToast(data.message, data.code === 200 ? 'success' : 'error');
+      } catch (e) {
+        showToast('保存失败', 'error');
+      }
+    }
+
+    // 数据库状态
+    async function loadDbStatus() {
+      try {
+        const resp = await fetch(BASE + '/api/db-status');
+        const data = await resp.json();
+        if (data.code !== 200) return;
+
+        const icons = { sys_user: 'U', elderly_info: 'E', health_record: 'H', alert_record: 'A', service_order: 'O', device_info: 'D', village_info: 'V', provider_info: 'P', family_member: 'F', system_config: 'S' };
+        let html = '';
+        data.data.forEach(t => {
+          html += `
+            <div class="db-card">
+              <div class="db-icon">${icons[t.table] || '?'}</div>
+              <div class="db-info">
+                <div class="db-name">${t.table}</div>
+                <div class="db-status">${t.status}</div>
+              </div>
+              <div class="db-count">${t.count}</div>
+            </div>`;
+        });
+        document.getElementById('dbGrid').innerHTML = html;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Toast
+    function showToast(msg, type) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast ' + type + ' show';
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // 初始化
+    document.getElementById('serverAddr').textContent = BASE;
+    renderApiList();
+  </script>
+</body>
+</html>

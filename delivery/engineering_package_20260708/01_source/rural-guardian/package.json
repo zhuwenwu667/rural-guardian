@@ -1,0 +1,32 @@
+{
+  "name": "rural-guardian",
+  "version": "1.0.0",
+  "description": "Rural Guardian - Smart Elderly Care Platform",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "./start.sh",
+    "build:frontend": "cd frontend && npm run build",
+    "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
+    "lint:fix": "npm run lint:fix --workspace=backend && npm run lint:fix --workspace=frontend",
+    "test": "npm test --workspace=backend",
+    "test:watch": "npm run test:watch --workspace=backend",
+    "test:coverage": "npm run test:coverage --workspace=backend"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.16.0",
+    "echarts": "^6.0.0",
+    "element-plus": "^2.13.7",
+    "pinia": "^3.0.4",
+    "vue-router": "^4.6.4"
+  }
+}

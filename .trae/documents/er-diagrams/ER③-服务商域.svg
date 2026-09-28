@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 818" width="720" height="818" role="img" aria-label="服务商数据域 ER 图">
+<style>
+:root{
+  color-scheme: light;
+  --surface:#F7F7F8; --surface-muted:#EFEFF2;
+  --text:#171717; --text-muted:#52525B;
+  --border:rgba(23,23,23,.12);
+  --brand:#4B3FE3; --brand-soft:#F2F7FF; --brand-text:#1A1759;
+  --radius:8px;
+  --font-sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --font-mono:Consolas,"JetBrains Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --surface:#171717; --surface-muted:#262626;
+    --text:#E5E5E5; --text-muted:#A1A1AA;
+    --border:rgba(229,229,229,.12);
+    --brand:#6054F1; --brand-soft:#1A1759; --brand-text:#CFD8FF;
+  }
+}
+text{font-family:var(--font-sans);}
+.ttl{font:600 14px var(--font-mono);fill:var(--text);}
+.sub{font:400 12px var(--font-sans);fill:var(--text-muted);}
+.row{font:400 12px var(--font-mono);fill:var(--text-muted);}
+.hdtt{font:600 17px var(--font-sans);fill:var(--text);}
+.hdsub{font:400 12.5px var(--font-sans);fill:var(--text-muted);}
+.ent{fill:var(--surface);stroke:var(--border);stroke-width:1.2;}
+.foc{fill:var(--brand-soft);stroke:var(--brand);stroke-width:1.4;}
+.div{stroke:var(--border);stroke-width:1;}
+.arr{stroke:var(--text-muted);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;fill:none;}
+.elbl{font:500 11.5px var(--font-sans);fill:var(--brand);}
+</style>
+
+<title>ER ③ · 服务商域（PROVIDER）</title>
+<text class="hdtt" x="40" y="28">ER 图 ③ · 服务商域（PROVIDER）</text>
+<text class="hdsub" x="40" y="46">账号 → 档案 1:1 · 服务商接单，经 order_flow / order_review 履约评价</text>
+
+<path class="arr" d="M320 180 L424 180"/>
+<text class="elbl" x="336" y="172">user_id · 1:1</text>
+
+<path class="arr" d="M470 284 L470 318 L345 318 L345 438 L322 438"/>
+<text class="elbl" x="352" y="306">provider_id</text>
+
+<path class="arr" d="M560 290 L560 360"/>
+<text class="elbl" x="571" y="334">provider_id</text>
+
+<path class="arr" d="M560 560 L560 620"/>
+<text class="elbl" x="571" y="600">order_id</text>
+
+<path class="arr" d="M470 560 L470 595 L345 595 L345 668 L322 668"/>
+<text class="elbl" x="352" y="586">order_id</text>
+
+<g>
+  <rect class="foc" x="40" y="95" width="280" height="170" rx="8"/>
+  <text class="ttl" x="56" y="121">sys_user</text>
+  <text class="sub" x="56" y="141">服务商账号</text>
+  <line class="div" x1="56" y1="153" x2="304" y2="153"/>
+  <text class="row" x="56" y="175">id · PK</text>
+  <text class="row" x="56" y="199">username / phone</text>
+  <text class="row" x="56" y="223">role = PROVIDER</text>
+  <text class="row" x="56" y="247">status</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="95" width="250" height="190" rx="8"/>
+  <text class="ttl" x="446" y="121">provider_info</text>
+  <text class="sub" x="446" y="141">服务商档案</text>
+  <line class="div" x1="446" y1="153" x2="664" y2="153"/>
+  <text class="row" x="446" y="175">id · PK</text>
+  <text class="row" x="446" y="199">user_id → 服务商账号</text>
+  <text class="row" x="446" y="223">name / service_types</text>
+  <text class="row" x="446" y="247">rating / status</text>
+  <text class="row" x="446" y="271">service_area</text>
+</g>
+
+<g>
+  <rect class="ent" x="40" y="440" width="280" height="180" rx="8"/>
+  <text class="ttl" x="56" y="466">provider_certification</text>
+  <text class="sub" x="56" y="486">服务商资质认证</text>
+  <line class="div" x1="56" y1="498" x2="304" y2="498"/>
+  <text class="row" x="56" y="520">id · PK</text>
+  <text class="row" x="56" y="544">provider_id → 服务商</text>
+  <text class="row" x="56" y="568">reviewer_id → 政府账号</text>
+  <text class="row" x="56" y="592">status · PENDING</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="360" width="250" height="200" rx="8"/>
+  <text class="ttl" x="446" y="386">service_order</text>
+  <text class="sub" x="446" y="406">服务工单</text>
+  <line class="div" x1="446" y1="418" x2="664" y2="418"/>
+  <text class="row" x="446" y="440">id · PK</text>
+  <text class="row" x="446" y="464">provider_id → 服务商</text>
+  <text class="row" x="446" y="488">elderly_id → 老人</text>
+  <text class="row" x="446" y="512">village_staff_id → 专员</text>
+  <text class="row" x="446" y="536">status / priority</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="630" width="250" height="140" rx="8"/>
+  <text class="ttl" x="446" y="656">order_flow</text>
+  <text class="sub" x="446" y="676">工单流转留痕</text>
+  <line class="div" x1="446" y1="688" x2="664" y2="688"/>
+  <text class="row" x="446" y="710">id · PK</text>
+  <text class="row" x="446" y="734">order_id → 工单</text>
+  <text class="row" x="446" y="758">operator_role</text>
+</g>
+
+<g>
+  <rect class="ent" x="40" y="668" width="280" height="140" rx="8"/>
+  <text class="ttl" x="56" y="694">order_review</text>
+  <text class="sub" x="56" y="714">服务评价</text>
+  <line class="div" x1="56" y1="726" x2="304" y2="726"/>
+  <text class="row" x="56" y="748">id · PK</text>
+  <text class="row" x="56" y="772">order_id → 工单</text>
+  <text class="row" x="56" y="796">rating</text>
+</g>
+
+<text class="hdsub" x="40" y="806">关系说明：服务商账号与档案 1:1（provider_info.user_id）→ 档案提交资质认证（provider_id）并承接服务工单（service_order.provider_id）→ 工单流转留痕（order_flow）与服务评价（order_review）构成履约闭环。</text>
+</svg>

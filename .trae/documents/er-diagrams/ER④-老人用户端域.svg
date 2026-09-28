@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 600" width="720" height="600" role="img" aria-label="老人用户端数据域 ER 图">
+<style>
+:root{
+  color-scheme: light;
+  --surface:#F7F7F8; --surface-muted:#EFEFF2;
+  --text:#171717; --text-muted:#52525B;
+  --border:rgba(23,23,23,.12);
+  --brand:#4B3FE3; --brand-soft:#F2F7FF; --brand-text:#1A1759;
+  --radius:8px;
+  --font-sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --font-mono:Consolas,"JetBrains Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --surface:#171717; --surface-muted:#262626;
+    --text:#E5E5E5; --text-muted:#A1A1AA;
+    --border:rgba(229,229,229,.12);
+    --brand:#6054F1; --brand-soft:#1A1759; --brand-text:#CFD8FF;
+  }
+}
+text{font-family:var(--font-sans);}
+.ttl{font:600 14px var(--font-mono);fill:var(--text);}
+.sub{font:400 12px var(--font-sans);fill:var(--text-muted);}
+.row{font:400 12px var(--font-mono);fill:var(--text-muted);}
+.hdtt{font:600 17px var(--font-sans);fill:var(--text);}
+.hdsub{font:400 12.5px var(--font-sans);fill:var(--text-muted);}
+.ent{fill:var(--surface);stroke:var(--border);stroke-width:1.2;}
+.foc{fill:var(--brand-soft);stroke:var(--brand);stroke-width:1.4;}
+.div{stroke:var(--border);stroke-width:1;}
+.arr{stroke:var(--text-muted);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;fill:none;}
+.elbl{font:500 11.5px var(--font-sans);fill:var(--brand);}
+</style>
+
+<title>ER ④ · 老人用户端域（ELDERLY / FAMILY_MEMBER）</title>
+<text class="hdtt" x="40" y="28">ER 图 ④ · 老人用户端域（ELDERLY / FAMILY_MEMBER）</text>
+<text class="hdsub" x="40" y="46">家属经 family_member 绑定老人档案 · 老人本人注册建档 · 档案挂手环产生实时体征</text>
+
+<path class="arr" d="M165 190 L165 294"/>
+<text class="elbl" x="176" y="246">user_id</text>
+
+<path class="arr" d="M288 316 L424 176"/>
+<text class="elbl" x="356" y="250">elderly_id</text>
+
+<path class="arr" d="M555 200 L555 294"/>
+<text class="elbl" x="566" y="252">elderly_id</text>
+
+<g>
+  <rect class="foc" x="40" y="40" width="250" height="150" rx="8"/>
+  <text class="ttl" x="56" y="66">sys_user</text>
+  <text class="sub" x="56" y="86">老人 / 家属账号</text>
+  <line class="div" x1="56" y1="98" x2="274" y2="98"/>
+  <text class="row" x="56" y="120">id · PK</text>
+  <text class="row" x="56" y="144">username / phone</text>
+  <text class="row" x="56" y="168">role = ELDERLY</text>
+  <text class="row" x="56" y="188">或 FAMILY_MEMBER</text>
+</g>
+
+<g>
+  <rect class="ent" x="40" y="300" width="250" height="180" rx="8"/>
+  <text class="ttl" x="56" y="326">family_member</text>
+  <text class="sub" x="56" y="346">家属-老人绑定关系</text>
+  <line class="div" x1="56" y1="358" x2="274" y2="358"/>
+  <text class="row" x="56" y="380">id · PK</text>
+  <text class="row" x="56" y="404">user_id → 家属账号</text>
+  <text class="row" x="56" y="428">elderly_id → 老人档案</text>
+  <text class="row" x="56" y="452">relationship · 关系</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="40" width="250" height="160" rx="8"/>
+  <text class="ttl" x="446" y="66">elderly_info</text>
+  <text class="sub" x="446" y="86">老人档案</text>
+  <line class="div" x1="446" y1="98" x2="664" y2="98"/>
+  <text class="row" x="446" y="120">id · PK</text>
+  <text class="row" x="446" y="144">name / phone</text>
+  <text class="row" x="446" y="168">village_id → 村</text>
+  <text class="row" x="446" y="192">emergency_contact</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="300" width="250" height="180" rx="8"/>
+  <text class="ttl" x="446" y="326">device_info</text>
+  <text class="sub" x="446" y="346">智能手环设备</text>
+  <line class="div" x1="446" y1="358" x2="664" y2="358"/>
+  <text class="row" x="446" y="380">id · PK</text>
+  <text class="row" x="446" y="404">elderly_id → 老人档案</text>
+  <text class="row" x="446" y="428">device_sn · type=BAND</text>
+  <text class="row" x="446" y="452">status · 电量</text>
+  <text class="row" x="446" y="476">device_realtime 体征</text>
+</g>
+
+<text class="hdsub" x="40" y="564">关系说明：老人/家属共用 sys_user 账号体系（role 区分）；家属通过 family_member 绑定老人档案，获得查看体征、收预警、代下单的权限；老人档案关联智能手环 device_info 与其实时体征。</text>
+</svg>

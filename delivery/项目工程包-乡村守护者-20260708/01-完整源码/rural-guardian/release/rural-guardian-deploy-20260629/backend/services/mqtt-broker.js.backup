@@ -1,0 +1,298 @@
+/**
+ * MQTT Broker 服务 - 简化版
+ * 端口: 1883 (TCP), 8884 (WebSocket)
+ */
+
+const net = require('net');
+const WebSocket = require('ws');
+
+const MQTT_PORT = 1883;
+const WS_PORT = 8884;
+
+const deviceDataCache = new Map();
+const validDevices = ['BAND001', 'BAND002', 'GW001', 'GW002'];
+const validKey = 'rural-guardian-2024';
+
+const mqttServer = net.createServer();
+
+mqttServer.on('connection', (socket) => {
+  console.log('[MQTT] 新的TCP连接');
+  
+  let clientId = null;
+  let username = null;
+  let password = null;
+  let authenticated = false;
+  let buffer = Buffer.alloc(0);
+  
+  socket.on('data', (data) => {
+    buffer = Buffer.concat([buffer, data]);
+    
+    while (buffer.length > 0) {
+      const result = parsePacket(buffer);
+      if (!result) break;
+      
+      const { packet, remaining } = result;
+      buffer = remaining;
+      
+      handlePacket(packet, socket);
+    }
+  });
+  
+  function parsePacket(buf) {
+    if (buf.length < 2) return null;
+    
+    const packetType = buf[0];
+    let pos = 1;
+    let multiplier = 1;
+    let remainingLength = 0;
+    let bytesRead = 0;
+    
+    // 解码剩余长度
+    for (let i = 0; i < 4 && pos < buf.length; i++) {
+      const byte = buf[pos++];
+      remainingLength += (byte & 0x7F) * multiplier;
+      multiplier *= 128;
+      bytesRead++;
+      if ((byte & 0x80) === 0) break;
+    }
+    
+    if (pos + remainingLength > buf.length) return null;
+    
+    const packet = buf.slice(0, pos + remainingLength);
+    const remaining = buf.slice(pos + remainingLength);
+    
+    return { packet, remaining };
+  }
+  
+  function handlePacket(packet, sock) {
+    const packetType = (packet[0] >> 4) & 0x0F;
+    
+    switch (packetType) {
+      case 1: // CONNECT
+        handleConnect(packet, sock);
+        break;
+      case 3: // PUBLISH
+        handlePublish(packet, sock);
+        break;
+      case 8: // SUBSCRIBE
+        handleSubscribe(packet, sock);
+        break;
+      case 12: // PINGREQ
+        sock.write(Buffer.from([0xD0, 0x00]));
+        break;
+      case 14: // DISCONNECT
+        sock.end();
+        break;
+    }
+  }
+  
+  function handleConnect(packet, sock) {
+    try {
+      // 跳过固定头
+      let pos = 1;
+      while (pos < packet.length && (packet[pos] & 0x80)) pos++;
+      pos++;
+      
+      // 协议名长度
+      const protoLen = packet.readUInt16BE(pos);
+      pos += 2;
+      
+      // 协议名
+      const protocol = packet.slice(pos, pos + protoLen).toString();
+      pos += protoLen;
+      
+      if (protocol !== 'MQTT') {
+        console.log('[MQTT] 不支持的协议:', protocol);
+        sock.end();
+        return;
+      }
+      
+      // 协议级别
+      pos++; // 跳过协议级别
+      
+      // 连接标志
+      const flags = packet[pos++];
+      const hasUsername = (flags & 0x80) !== 0;
+      const hasPassword = (flags & 0x40) !== 0;
+      
+      // 跳过keepalive
+      pos += 2;
+      
+      // Client ID
+      const clientIdLen = packet.readUInt16BE(pos);
+      pos += 2;
+      clientId = packet.slice(pos, pos + clientIdLen).toString();
+      pos += clientIdLen;
+      
+      // Will Topic (如果有遗嘱)
+      if (flags & 0x04) {
+        const willTopicLen = packet.readUInt16BE(pos);
+        pos += 2 + willTopicLen;
+        const willMsgLen = packet.readUInt16BE(pos);
+        pos += 2 + willMsgLen;
+      }
+      
+      // Username
+      if (hasUsername) {
+        const userLen = packet.readUInt16BE(pos);
+        pos += 2;
+        username = packet.slice(pos, pos + userLen).toString();
+        pos += userLen;
+      }
+      
+      // Password
+      if (hasPassword) {
+        const passLen = packet.readUInt16BE(pos);
+        pos += 2;
+        password = packet.slice(pos, pos + passLen).toString();
+      }
+      
+      console.log(`[MQTT] 连接请求: clientId=${clientId}, username=${username}`);
+      
+      // 验证
+      if (validDevices.includes(username) && password === validKey) {
+        authenticated = true;
+        console.log(`[MQTT] 设备认证成功: ${username}`);
+        sock.write(Buffer.from([0x20, 0x02, 0x00, 0x00]));
+      } else {
+        console.log(`[MQTT] 设备认证失败: ${username}`);
+        sock.write(Buffer.from([0x20, 0x02, 0x00, 0x05]));
+        sock.end();
+      }
+    } catch (e) {
+      console.error('[MQTT] CONNECT解析错误:', e.message);
+      sock.end();
+    }
+  }
+  
+  function handlePublish(packet, sock) {
+    if (!authenticated) return;
+    
+    try {
+      // 跳过固定头
+      let pos = 1;
+      while (pos < packet.length && (packet[pos] & 0x80)) pos++;
+      pos++;
+      
+      // Topic
+      const topicLen = packet.readUInt16BE(pos);
+      pos += 2;
+      const topic = packet.slice(pos, pos + topicLen).toString();
+      pos += topicLen;
+      
+      // QoS > 0 时跳过packet id
+      const qos = (packet[0] & 0x06) >> 1;
+      if (qos > 0) pos += 2;
+      
+      // Payload
+      const payload = packet.slice(pos);
+      const message = payload.toString();
+      
+      console.log(`[MQTT] 收到消息: ${username || clientId} -> ${topic}`);
+      
+      if (topic.includes('/telemetry')) {
+        handleTelemetry(username || clientId, message);
+      } else if (topic.includes('/event')) {
+        handleEvent(username || clientId, message);
+      }
+    } catch (e) {
+      console.error('[MQTT] PUBLISH解析错误:', e.message);
+    }
+  }
+  
+  function handleSubscribe(packet, sock) {
+    if (!authenticated) return;
+    
+    // 简单的SUBACK响应
+    sock.write(Buffer.from([0x90, 0x03, 0x00, 0x01, 0x01]));
+    console.log(`[MQTT] 设备订阅: ${username || clientId}`);
+  }
+  
+  socket.on('close', () => {
+    console.log(`[MQTT] 连接关闭: ${username || clientId || 'unknown'}`);
+  });
+  
+  socket.on('error', (err) => {
+    console.error(`[MQTT] 连接错误: ${err.message}`);
+  });
+});
+
+function handleTelemetry(deviceSn, payload) {
+  try {
+    const data = JSON.parse(payload);
+    console.log(`[MQTT] 遥测数据: ${deviceSn}`, data.data || data);
+    
+    deviceDataCache.set(deviceSn, {
+      ...data,
+      lastUpdate: Date.now()
+    });
+    
+    try {
+      const deviceEngine = require('./device-engine');
+      deviceEngine.processMqttData({
+        deviceSn,
+        deviceType: data.deviceType || 'BAND',
+        elderlyId: data.elderlyId,
+        timestamp: data.timestamp || new Date().toISOString(),
+        data: data.data || data,
+        events: data.events || []
+      });
+    } catch (e) {
+      // 设备引擎可能未加载
+    }
+  } catch (err) {
+    console.error('[MQTT] 解析遥测数据失败:', err.message);
+  }
+}
+
+function handleEvent(deviceSn, payload) {
+  try {
+    const event = JSON.parse(payload);
+    console.log(`[MQTT] 事件数据: ${deviceSn}`, event);
+    
+    if (event.type === 'FALL_DETECTED' || event.type === 'SOS_PRESSED') {
+      console.log(`[MQTT] ⚠️ 紧急事件: ${event.type}`);
+    }
+  } catch (err) {
+    console.error('[MQTT] 解析事件数据失败:', err.message);
+  }
+}
+
+// WebSocket服务器
+const wss = new WebSocket.Server({ port: WS_PORT });
+
+wss.on('connection', (ws) => {
+  console.log('[MQTT-WS] 新的WebSocket连接');
+  
+  ws.on('message', (message) => {
+    console.log('[MQTT-WS] 收到消息');
+  });
+  
+  ws.on('close', () => {
+    console.log('[MQTT-WS] 连接关闭');
+  });
+});
+
+function start() {
+  mqttServer.listen(MQTT_PORT, () => {
+    console.log(`[MQTT] TCP Broker 启动成功，端口: ${MQTT_PORT}`);
+  });
+  
+  console.log(`[MQTT] WebSocket Broker 启动成功，端口: ${WS_PORT}`);
+}
+
+function stop() {
+  mqttServer.close();
+  wss.close();
+  console.log('[MQTT] Broker 已停止');
+}
+
+function sendCommand(deviceSn, command) {
+  console.log(`[MQTT] 发送命令: ${deviceSn} -> ${JSON.stringify(command)}`);
+}
+
+module.exports = {
+  start,
+  stop,
+  sendCommand
+};

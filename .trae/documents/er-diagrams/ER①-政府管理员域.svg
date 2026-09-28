@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 754" width="720" height="754" role="img" aria-label="政府管理员数据域 ER 图">
+<style>
+:root{
+  color-scheme: light;
+  --surface:#F7F7F8; --surface-muted:#EFEFF2;
+  --text:#171717; --text-muted:#52525B;
+  --border:rgba(23,23,23,.12);
+  --brand:#4B3FE3; --brand-soft:#F2F7FF; --brand-text:#1A1759;
+  --radius:8px;
+  --font-sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --font-mono:Consolas,"JetBrains Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --surface:#171717; --surface-muted:#262626;
+    --text:#E5E5E5; --text-muted:#A1A1AA;
+    --border:rgba(229,229,229,.12);
+    --brand:#6054F1; --brand-soft:#1A1759; --brand-text:#CFD8FF;
+  }
+}
+text{font-family:var(--font-sans);}
+.ttl{font:600 14px var(--font-mono);fill:var(--text);}
+.sub{font:400 12px var(--font-sans);fill:var(--text-muted);}
+.row{font:400 12px var(--font-mono);fill:var(--text-muted);}
+.hdtt{font:600 17px var(--font-sans);fill:var(--text);}
+.hdsub{font:400 12.5px var(--font-sans);fill:var(--text-muted);}
+.ent{fill:var(--surface);stroke:var(--border);stroke-width:1.2;}
+.foc{fill:var(--brand-soft);stroke:var(--brand);stroke-width:1.4;}
+.div{stroke:var(--border);stroke-width:1;}
+.arr{stroke:var(--text-muted);stroke-width:1.3;stroke-linecap:round;fill:none;}
+.lbl{font:500 12px var(--font-sans);fill:var(--text-muted);}
+</style>
+
+<title>ER ① · 政府管理员域（GOV_ADMIN）</title>
+<text class="hdtt" x="40" y="28">ER 图 ① · 政府管理员域（GOV_ADMIN）</text>
+<text class="hdsub" x="40" y="46">连线为 1:N（一方主键 → 多方外键），外键已标注在各卡片字段行 · 三角色共用 sys_user，以 role 区分</text>
+
+<path class="arr" d="M272 330 L394 138"/>
+<path class="arr" d="M272 372 L394 354"/>
+<path class="arr" d="M272 416 L394 566"/>
+<text class="lbl" x="300" y="222">1</text>
+<text class="lbl" x="356" y="216">N</text>
+<text class="lbl" x="292" y="362">1</text>
+<text class="lbl" x="352" y="360">N</text>
+<text class="lbl" x="300" y="510">1</text>
+<text class="lbl" x="356" y="504">N</text>
+
+<g>
+  <rect class="foc" x="40" y="270" width="232" height="190" rx="8"/>
+  <text class="ttl" x="56" y="296">sys_user</text>
+  <text class="sub" x="56" y="316">政府管理员账号</text>
+  <line class="div" x1="56" y1="328" x2="256" y2="328"/>
+  <text class="row" x="56" y="350">id · PK</text>
+  <text class="row" x="56" y="374">username</text>
+  <text class="row" x="56" y="398">role = GOV_ADMIN</text>
+  <text class="row" x="56" y="422">village_id → 辖区</text>
+  <text class="row" x="56" y="446">phone / status</text>
+</g>
+
+<g>
+  <rect class="ent" x="400" y="70" width="276" height="180" rx="8"/>
+  <text class="ttl" x="416" y="96">provider_certification</text>
+  <text class="sub" x="416" y="116">服务商资质审核</text>
+  <line class="div" x1="416" y1="128" x2="660" y2="128"/>
+  <text class="row" x="416" y="150">id · PK</text>
+  <text class="row" x="416" y="174">provider_id → provider_info</text>
+  <text class="row" x="416" y="198">reviewer_id → 政府账号</text>
+  <text class="row" x="416" y="222">status · PENDING/ACTIVE</text>
+</g>
+
+<g>
+  <rect class="ent" x="400" y="280" width="276" height="180" rx="8"/>
+  <text class="ttl" x="416" y="306">device_binding_approval</text>
+  <text class="sub" x="416" y="326">设备发放 / 绑定审批</text>
+  <line class="div" x1="416" y1="338" x2="660" y2="338"/>
+  <text class="row" x="416" y="360">id · PK</text>
+  <text class="row" x="416" y="384">device_id → device_info</text>
+  <text class="row" x="416" y="408">elderly_id → elderly_info</text>
+  <text class="row" x="416" y="432">approver_id → 政府账号</text>
+</g>
+
+<g>
+  <rect class="ent" x="400" y="490" width="276" height="180" rx="8"/>
+  <text class="ttl" x="416" y="516">family_binding_approval</text>
+  <text class="sub" x="416" y="536">家属关系绑定审批</text>
+  <line class="div" x1="416" y1="548" x2="660" y2="548"/>
+  <text class="row" x="416" y="570">id · PK</text>
+  <text class="row" x="416" y="594">elderly_id → elderly_info</text>
+  <text class="row" x="416" y="618">user_id → 申请账号</text>
+  <text class="row" x="416" y="642">approver_id → 政府账号</text>
+</g>
+
+<text class="hdsub" x="40" y="724">关系说明：政府管理员（sys_user·GOV_ADMIN）承担三项监管审批 —— 服务商资质（reviewer_id）、设备绑定（approver_id）、家属绑定（approver_id）；审批类表均以 sys_user.id 为审核人外键。</text>
+</svg>

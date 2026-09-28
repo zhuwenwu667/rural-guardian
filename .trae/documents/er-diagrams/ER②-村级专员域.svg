@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 790" width="720" height="790" role="img" aria-label="村级专员数据域 ER 图">
+<style>
+:root{
+  color-scheme: light;
+  --surface:#F7F7F8; --surface-muted:#EFEFF2;
+  --text:#171717; --text-muted:#52525B;
+  --border:rgba(23,23,23,.12);
+  --brand:#4B3FE3; --brand-soft:#F2F7FF; --brand-text:#1A1759;
+  --radius:8px;
+  --font-sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --font-mono:Consolas,"JetBrains Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --surface:#171717; --surface-muted:#262626;
+    --text:#E5E5E5; --text-muted:#A1A1AA;
+    --border:rgba(229,229,229,.12);
+    --brand:#6054F1; --brand-soft:#1A1759; --brand-text:#CFD8FF;
+  }
+}
+text{font-family:var(--font-sans);}
+.ttl{font:600 14px var(--font-mono);fill:var(--text);}
+.sub{font:400 12px var(--font-sans);fill:var(--text-muted);}
+.row{font:400 12px var(--font-mono);fill:var(--text-muted);}
+.hdtt{font:600 17px var(--font-sans);fill:var(--text);}
+.hdsub{font:400 12.5px var(--font-sans);fill:var(--text-muted);}
+.ent{fill:var(--surface);stroke:var(--border);stroke-width:1.2;}
+.foc{fill:var(--brand-soft);stroke:var(--brand);stroke-width:1.4;}
+.div{stroke:var(--border);stroke-width:1;}
+.arr{stroke:var(--text-muted);stroke-width:1.3;stroke-linecap:round;fill:none;}
+.elbl{font:500 11.5px var(--font-sans);fill:var(--brand);}
+</style>
+
+<title>ER ② · 村级专员域（VILLAGE_STAFF）</title>
+<text class="hdtt" x="40" y="28">ER 图 ② · 村级专员域（VILLAGE_STAFF）</text>
+<text class="hdsub" x="40" y="46">线下外键按行标注 · 未标数字的关系：父表 1 侧、持有外键的子表 N 侧</text>
+
+<path class="arr" d="M430 128 L296 188"/>
+<text class="elbl" x="366" y="150">village_id</text>
+<path class="arr" d="M560 240 L560 274"/>
+<text class="elbl" x="570" y="262">同村老人</text>
+<path class="arr" d="M560 430 L560 464"/>
+<text class="elbl" x="570" y="452">产生预警</text>
+<path class="arr" d="M280 372 L404 552"/>
+<text class="elbl" x="340" y="462">处置</text>
+<path class="arr" d="M478 430 L310 520"/>
+<text class="elbl" x="376" y="488">elderly_id</text>
+<path class="arr" d="M180 430 L180 514"/>
+<text class="elbl" x="192" y="478">初审</text>
+
+<g>
+  <rect class="foc" x="40" y="180" width="240" height="250" rx="8"/>
+  <text class="ttl" x="56" y="206">sys_user</text>
+  <text class="sub" x="56" y="226">村级专员账号</text>
+  <line class="div" x1="56" y1="238" x2="264" y2="238"/>
+  <text class="row" x="56" y="260">id · PK</text>
+  <text class="row" x="56" y="284">username / role</text>
+  <text class="row" x="56" y="308">role = VILLAGE_STAFF</text>
+  <text class="row" x="56" y="332">village_id → 所属村</text>
+  <text class="row" x="56" y="356">phone / status</text>
+  <text class="row" x="56" y="380">处置预警 · 初审工单</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="70" width="250" height="170" rx="8"/>
+  <text class="ttl" x="446" y="96">village_info</text>
+  <text class="sub" x="446" y="116">行政村</text>
+  <line class="div" x1="446" y1="128" x2="664" y2="128"/>
+  <text class="row" x="446" y="150">id · PK</text>
+  <text class="row" x="446" y="174">name / town / district</text>
+  <text class="row" x="446" y="198">elderly_count</text>
+  <text class="row" x="446" y="222">staff_count</text>
+</g>
+
+<g>
+  <rect class="ent" x="430" y="280" width="250" height="150" rx="8"/>
+  <text class="ttl" x="446" y="306">elderly_info</text>
+  <text class="sub" x="446" y="326">老人档案</text>
+  <line class="div" x1="446" y1="338" x2="664" y2="338"/>
+  <text class="row" x="446" y="360">id · PK</text>
+  <text class="row" x="446" y="384">name / village_id → 村</text>
+  <text class="row" x="446" y="408">health_status</text>
+</g>
+
+<g>
+  <rect class="ent" x="420" y="470" width="260" height="160" rx="8"/>
+  <text class="ttl" x="436" y="496">alert_record</text>
+  <text class="sub" x="436" y="516">预警记录</text>
+  <line class="div" x1="436" y1="528" x2="664" y2="528"/>
+  <text class="row" x="436" y="550">id · PK</text>
+  <text class="row" x="436" y="574">elderly_id → 老人</text>
+  <text class="row" x="436" y="598">handler_id → 村级专员</text>
+  <text class="row" x="436" y="622">level / escalation_level</text>
+</g>
+
+<g>
+  <rect class="ent" x="40" y="520" width="240" height="190" rx="8"/>
+  <text class="ttl" x="56" y="546">service_order</text>
+  <text class="sub" x="56" y="566">服务工单</text>
+  <line class="div" x1="56" y1="578" x2="264" y2="578"/>
+  <text class="row" x="56" y="600">id · PK</text>
+  <text class="row" x="56" y="624">elderly_id → 老人</text>
+  <text class="row" x="56" y="648">village_staff_id → 专员</text>
+  <text class="row" x="56" y="672">type / status</text>
+  <text class="row" x="56" y="696">priority</text>
+</g>
+
+<text class="hdsub" x="40" y="764">关系说明：村级专员归属行政村（sys_user.village_id → village_info）；本村老人产生预警后由专员处置（alert_record.handler_id），老人提交的服务工单由专员初审（service_order.village_staff_id）。</text>
+</svg>

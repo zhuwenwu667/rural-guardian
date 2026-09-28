@@ -1,0 +1,168 @@
+const initSqlJs = require('sql.js');
+const path = require('path');
+const fs = require('fs');
+
+const DB_PATH = path.join(__dirname, '..', 'data', 'rural_guardian.db');
+
+// 确保数据目录存在
+const dataDir = path.dirname(DB_PATH);
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// 兼容 better-sqlite3 的 Statement 类
+class StatementCompat {
+  constructor(db, sql) {
+    this._db = db;
+    this._sql = sql;
+  }
+
+  run(...params) {
+    this._db._db.run(this._sql, params);
+    const changes = this._db._db.getRowsModified();
+    const result = this._db._db.exec('SELECT last_insert_rowid()');
+    let lastInsertRowid = 0;
+    if (result.length > 0 && result[0].values.length > 0) {
+      lastInsertRowid = result[0].values[0][0];
+    }
+    return { changes, lastInsertRowid };
+  }
+
+  get(...params) {
+    const stmt = this._db._db.prepare(this._sql);
+    stmt.bind(params);
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      stmt.free();
+      return row;
+    } else {
+      stmt.free();
+      return undefined;
+    }
+  }
+
+  all(...params) {
+    const stmt = this._db._db.prepare(this._sql);
+    stmt.bind(params);
+    const results = [];
+    while (stmt.step()) {
+      results.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return results;
+  }
+}
+
+// 兼容 better-sqlite3 的 Database 类
+class DatabaseCompat {
+  constructor(SQL, buffer) {
+    if (buffer) {
+      this._db = new SQL.Database(buffer);
+    } else {
+      this._db = new SQL.Database();
+    }
+  }
+
+  pragma(stmt) {
+    this._db.run(`PRAGMA ${stmt}`);
+  }
+
+  exec(sql) {
+    const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
+    for (const stmt of statements) {
+      try {
+        this._db.run(stmt);
+      } catch (e) {
+        if (!e.message.includes('already exists') && !e.message.includes('duplicate')) {
+          throw e;
+        }
+      }
+    }
+  }
+
+  prepare(sql) {
+    return new StatementCompat(this, sql);
+  }
+
+  transaction(fn) {
+    const self = this;
+    return function (...args) {
+      self._db.run('BEGIN');
+      try {
+        const result = fn.apply(this, args);
+        self._db.run('COMMIT');
+        return result;
+      } catch (e) {
+        self._db.run('ROLLBACK');
+        throw e;
+      }
+    };
+  }
+
+  save() {
+    const data = this._db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(DB_PATH, buffer);
+  }
+
+  close() {
+    this.save();
+    this._db.close();
+  }
+}
+
+// 单例模式：只初始化一次
+let dbInstance = null;
+let initPromise = null;
+
+async function initDb() {
+  // 如果已经初始化，直接返回
+  if (dbInstance) return dbInstance;
+  
+  // 如果正在初始化，等待完成
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    const SQL = await initSqlJs();
+    
+    // 从文件加载数据库
+    let dbBuffer = null;
+    if (fs.existsSync(DB_PATH)) {
+      dbBuffer = fs.readFileSync(DB_PATH);
+    }
+    
+    dbInstance = new DatabaseCompat(SQL, dbBuffer);
+    dbInstance.pragma('journal_mode = WAL');
+    dbInstance.pragma('foreign_keys = ON');
+
+    // 定期保存到文件（每30秒）
+    setInterval(() => {
+      try { dbInstance.save(); } catch (e) {}
+    }, 30000);
+
+    process.on('exit', () => { try { dbInstance.save(); } catch (e) {} });
+    process.on('SIGINT', () => { try { dbInstance.save(); } catch (e) {} process.exit(0); });
+    process.on('SIGTERM', () => { try { dbInstance.save(); } catch (e) {} process.exit(0); });
+
+    return dbInstance;
+  })();
+
+  return initPromise;
+}
+
+// 导出单例代理对象
+const dbProxy = new Proxy({}, {
+  get(target, prop) {
+    if (prop === 'initDb') return initDb;
+    if (prop === 'DB_PATH') return DB_PATH;
+    if (dbInstance && typeof dbInstance[prop] === 'function') {
+      return dbInstance[prop].bind(dbInstance);
+    }
+    if (dbInstance && prop in dbInstance) {
+      return dbInstance[prop];
+    }
+    return undefined;
+  }
+});
+
+module.exports = dbProxy;

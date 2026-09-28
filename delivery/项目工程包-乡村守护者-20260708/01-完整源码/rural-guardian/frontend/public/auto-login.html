@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Auto Login</title>
+    <style>
+      html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei"; }
+      .wrap { height: 100%; display: grid; place-items: center; background: #0b1220; color: #e5e7eb; }
+      .card { width: min(720px, calc(100vw - 32px)); border: 1px solid rgba(148,163,184,0.18); border-radius: 16px; padding: 18px 20px; background: rgba(15,23,42,0.6); box-shadow: 0 10px 40px rgba(0,0,0,0.35); }
+      .title { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+      .desc { margin: 0; opacity: 0.9; line-height: 1.6; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <p class="title">正在执行演示登录…</p>
+        <p class="desc">若未自动跳转，请检查后端服务与网络代理设置。</p>
+        <p class="desc mono" id="status"></p>
+      </div>
+    </div>
+    <script>
+      const params = new URLSearchParams(location.search)
+      const role = params.get('role') || 'GOV_ADMIN'
+      const target = params.get('target') || '/gov/alert'
+      const status = document.getElementById('status')
+      status.textContent = `role=${role} target=${target}`
+
+      async function run() {
+        const resp = await fetch(`/api/auth/demo-login?role=${encodeURIComponent(role)}`, { credentials: 'include' })
+        const result = await resp.json()
+        if (result && result.code === 200 && result.data && result.data.token) {
+          localStorage.setItem('token', result.data.token)
+          localStorage.setItem('role', result.data.user?.role || role)
+          localStorage.setItem('realName', result.data.user?.realName || '')
+          location.replace(target)
+          return
+        }
+        status.textContent = `登录失败：${result?.message || 'unknown'}`
+      }
+
+      run().catch((e) => {
+        status.textContent = `登录异常：${e?.message || e}`
+      })
+    </script>
+  </body>
+</html>
